@@ -1,0 +1,25 @@
+model:
+  path: models/best.pt
+
+video:
+  input: input/video.mp4
+  output: output/videos/output.mp4
+
+tracking:
+  conf: 0.25
+  imgsz: 640
+  alpha: 0.4
+  n_confirm: 3
+  m_persist: 20
+
+visualization:
+  draw_mask: true
+
+output:
+  csv: output/csv/output.csv
+  log: output/logs/pipeline.log
+
+limits:
+  bottom: 0.8
+  left: 0.05
+  right: 0.95
