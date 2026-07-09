@@ -2,24 +2,30 @@ model:
   path: models/best.pt
 
 video:
-  input: input/video.mp4
-  output: output/videos/output.mp4
-
+  input: input/yol_videosu_klip2_4.40-5.00.mp4
+  output: output/videos/output_klip2_4.40-5.00_3.mp4
+#yol_videosu_klip1_3.20-3.45.mp4
+#yol_videosu_klip2_4.40-5.00.mp4
+#yol_videosu_klip3_6.10-6.30.mp4
+#yol_videosu_klip4_7.00-7.25.mp4
 tracking:
   conf: 0.25
   imgsz: 640
-  alpha: 0.4
+  alpha: 0.8
   n_confirm: 3
   m_persist: 20
-
-visualization:
-  draw_mask: true
 
 output:
   csv: output/csv/output.csv
   log: output/logs/pipeline.log
 
-limits:
-  bottom: 0.8
-  left: 0.05
-  right: 0.95
+roi:
+  points:
+    - [0.38, 0.55]
+    - [0.62, 0.55]
+    - [1.00, 0.85]
+    - [0.00, 0.85]
+
+visualization:
+  draw_mask: true
+  draw_roi: true

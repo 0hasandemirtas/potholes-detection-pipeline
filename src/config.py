@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import yaml
 
+
 @dataclass
 class ModelConfig:
     path: str
@@ -24,28 +25,27 @@ class TrackingConfig:
 @dataclass
 class VisualizationConfig:
     draw_mask: bool
+    draw_roi: bool = False
 
 
 @dataclass
 class OutputConfig:
     csv: str
-    #log: str
+    log: str | None = None
 
 @dataclass
-class LimitsConfig:
-    bottom: float
-    left: float
-    right: float
+class RoiConfig:
+    points: list[list[float]]
 
 
 @dataclass
 class Config:
+    roi: RoiConfig
     model: ModelConfig
     video: VideoConfig
+    output: OutputConfig
     tracking: TrackingConfig
     visualization: VisualizationConfig
-    output: OutputConfig
-    limits: LimitsConfig
 
     @classmethod
     def from_yaml(cls, path: str):
@@ -53,10 +53,10 @@ class Config:
             cfg = yaml.safe_load(f)
 
         return cls(
+            roi=RoiConfig(**cfg["roi"]),
             model=ModelConfig(**cfg["model"]),
             video=VideoConfig(**cfg["video"]),
+            output=OutputConfig(**cfg["output"]),
             tracking=TrackingConfig(**cfg["tracking"]),
             visualization=VisualizationConfig(**cfg["visualization"]),
-            output=OutputConfig(**cfg["output"]),
-            limits=LimitsConfig(**cfg["limits"]),
         )
