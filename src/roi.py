@@ -3,6 +3,7 @@ import numpy as np
 
 
 def build_roi_polygon(points: list[list[float]], width: int, height: int) -> np.ndarray:
+    """Verilen normalized koordinatları kullanarak ROI poligonunu oluşturur ve döndürür."""
     return np.array(
         [[int(x * width), int(y * height)] for x, y in points],
         dtype=np.int32,
@@ -10,6 +11,7 @@ def build_roi_polygon(points: list[list[float]], width: int, height: int) -> np.
 
 
 def is_box_in_roi(box, roi_polygon: np.ndarray | None) -> bool:
+    """Verilen kutunun ROI içinde olup olmadığını kontrol eder. Eğer ROI yoksa True döndürür."""
     if roi_polygon is None:
         return True
 
