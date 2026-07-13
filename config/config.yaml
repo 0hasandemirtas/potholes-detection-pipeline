@@ -2,22 +2,29 @@ model:
   path: models/best.pt
 
 video:
-  input: input/yol_videosu_klip2_4.40-5.00.mp4
-  output: output/videos/output_klip2_4.40-5.00_3.mp4
+  input: input/klip2_4.40-5.00_slow0.8x.mp4
+  output: output/videos/output_klip2_4.40-5.00_bytetrack_no_smoothing.mp4
 #yol_videosu_klip1_3.20-3.45.mp4
 #yol_videosu_klip2_4.40-5.00.mp4
 #yol_videosu_klip3_6.10-6.30.mp4
 #yol_videosu_klip4_7.00-7.25.mp4
+#cok_kotu.mp4
 tracking:
-  conf: 0.25
+  backend: ultralytics
+  tracker: bytetrack.yaml
+  conf: 0.15
   imgsz: 640
-  alpha: 0.8
   n_confirm: 3
-  m_persist: 20
+  m_persist: 5
+
+smoothing:
+  type: none
+  alpha: 0.5
 
 output:
-  csv: output/csv/output.csv
-  log: output/logs/pipeline.log
+  csv: output/csv/output_bytetrack_no_smoothing.csv
+  log: output/logs/pipeline_bytetrack_no_smoothing.log
+  benchmark_csv: output/benchmarks/results.csv
 
 roi:
   points:

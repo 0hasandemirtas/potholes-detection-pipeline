@@ -6,7 +6,6 @@ import yaml
 class ModelConfig:
     path: str
 
-
 @dataclass
 class VideoConfig:
     input: str
@@ -15,9 +14,10 @@ class VideoConfig:
 
 @dataclass
 class TrackingConfig:
+    backend: str
+    tracker: str
     conf: float
     imgsz: int
-    alpha: float
     n_confirm: int
     m_persist: int
 
@@ -32,10 +32,16 @@ class VisualizationConfig:
 class OutputConfig:
     csv: str
     log: str | None = None
+    benchmark_csv: str | None = None
 
 @dataclass
 class RoiConfig:
     points: list[list[float]]
+
+@dataclass
+class SmoothingConfig:
+    type: str
+    alpha: float = 0.5
 
 
 @dataclass
@@ -45,6 +51,7 @@ class Config:
     video: VideoConfig
     output: OutputConfig
     tracking: TrackingConfig
+    smoothing: SmoothingConfig
     visualization: VisualizationConfig
 
     @classmethod
@@ -58,5 +65,6 @@ class Config:
             video=VideoConfig(**cfg["video"]),
             output=OutputConfig(**cfg["output"]),
             tracking=TrackingConfig(**cfg["tracking"]),
+            smoothing=SmoothingConfig(**cfg["smoothing"]),
             visualization=VisualizationConfig(**cfg["visualization"]),
         )

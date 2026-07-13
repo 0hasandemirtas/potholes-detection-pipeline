@@ -5,27 +5,34 @@ import cv2
 import time
 import logging
 import numpy as np
-from ultralytics import YOLO
-from ultralytics.engine.results import Results
 
 from src.config import Config
-from src.models import TrackLog
+from src.models import (
+    TrackLog,
+    PipelineMetrics,
+)
 from src.tracking import TrackState
-from src.smoothing import BoxSmoother
+from src.protocols import (
+    BoxSmootherProtocol,
+    TrackingBackendProtocol,
+)
 from src.roi import build_roi_polygon, is_box_in_roi
 
 logger = logging.getLogger(__name__)
 
 class PotholePipeline:
-    def __init__(self, cfg: Config):
-        self.model_path = cfg.model.path
+    def __init__(
+            self,
+            cfg: Config,
+            smoother: BoxSmootherProtocol,
+            tracking_backend: TrackingBackendProtocol,
+    ):
         self.video_path = cfg.video.input
         self.output_path = cfg.video.output
         self.csv_path = cfg.output.csv
 
-        self.conf = cfg.tracking.conf
-        self.imgsz = cfg.tracking.imgsz
-        self.alpha = cfg.tracking.alpha
+        self.smoother = smoother
+        self.tracking_backend = tracking_backend
         self.n_confirm = cfg.tracking.n_confirm
         self.m_persist = cfg.tracking.m_persist
         self.draw_mask = cfg.visualization.draw_mask
@@ -34,7 +41,6 @@ class PotholePipeline:
         self.prev_frame_time = None
         self.current_fps = 0.0
 
-        self.model = None
         self.cap = None
         self.out = None
 
@@ -50,18 +56,11 @@ class PotholePipeline:
             m_persist=self.m_persist,
         )
 
-        self.smoother = BoxSmoother(self.alpha)
-
         self.track_log: dict[int, TrackLog] = {}
         self.frame_count = 0
 
-    def load_model(self) -> None:
-        if not Path(self.model_path).is_file():
-            logger.error("Model dosyasi bulunamadi: %s", self.model_path)
-            raise FileNotFoundError(f"Model dosyasi bulunamadi: {self.model_path}")
-        self.model = YOLO(self.model_path)
-
     def initialize_video(self) -> None:
+        """Video varsa videoyu açıyor, yoksa hata veriyor. Çıktı videosu için gerekli ayarlamaları yapıyor."""
         if not Path(self.video_path).is_file():
             logger.error("Girdi videosu bulunamadi: %s", self.video_path)
             raise FileNotFoundError(f"Video dosyasi bulunamadi: {self.video_path}")
@@ -86,44 +85,13 @@ class PotholePipeline:
         if not self.out.isOpened():
             raise RuntimeError("Cikti videosu yazmak icin acilamadi.")
 
-    def track_objects(self, frame) -> list[Results]:
-
-        results = self.model.track(
-            frame,
-            conf=self.conf,
-            imgsz=self.imgsz,
-            persist=True,
-            tracker="bytetrack.yaml",
-        )
-
-        return results
-
-    def parse_results(self, results) -> dict[int, tuple[np.ndarray, np.ndarray | None]]:
-        result = results[0]
-        detections = {}
-        boxes = (
-            result.boxes.xyxy.cpu().numpy()
-            if result.boxes is not None
-            else np.array([])
-        )
-        masks = result.masks.xy if result.masks is not None else None
-        track_ids = (
-            result.boxes.id.int().tolist()
-            if result.boxes is not None and result.boxes.id is not None
-            else []
-        )
-
-        for i, track_id in enumerate(track_ids):
-            mask = masks[i] if masks is not None else None
-            detections[track_id] = (boxes[i], mask)
-
-        return detections
-
     def update_tracks(self, detections) -> None:
+        """TrackState ve BoxSmoother'ı günceller. Görünür olmayan trackleri temizler."""
         for track_id in self.state.update(detections.keys()):
             self.smoother.drop(track_id)
 
     def process_tracks(self, frame, detections) -> None:
+        """Trackleri işler, ROI kontrolü yapar ve çizim için drawable_tracks listesi oluşturur."""
         drawable_tracks = []
 
         for track_id in list(self.state.tracks.keys()):
@@ -136,21 +104,28 @@ class PotholePipeline:
         self.draw_tracks(frame, drawable_tracks)
 
     def handle_track(self, track_id, detections) -> tuple[int, np.ndarray, np.ndarray | None] | None:
+        """Track için ROI kontrolü yapar ve drawable_tracks listesine ekler."""
         detection = detections.get(track_id)
 
         if detection is None:
-            box = self.smoother.prev_box.get(track_id)
-            if box is not None and not is_box_in_roi(box, self.roi_polygon):
-                self.state.remove_track(track_id)
+            box = self.smoother.get_last_box(track_id)
 
-            self.smoother.drop(track_id)
-            return
+            if box is None:
+                return None
+
+            if not is_box_in_roi(box, self.roi_polygon):
+                self.state.remove_track(track_id)
+                self.smoother.drop(track_id)
+                return None
+
+            return track_id, box, None
 
         raw_box, mask = detection
+
         if not is_box_in_roi(raw_box, self.roi_polygon):
             self.state.remove_track(track_id)
             self.smoother.drop(track_id)
-            return
+            return None
 
         box = self.smoother.smooth(raw_box, track_id)
 
@@ -160,6 +135,8 @@ class PotholePipeline:
         return track_id, box, mask
 
     def draw_tracks(self, frame, drawable_tracks) -> None:
+        """Drawable_tracks listesindeki trackleri çizer. Eğer draw_mask True ise maskeleri de çizer."""
+        masks = []
         if self.draw_mask:
             masks = [
                 mask.astype(np.int32, copy=False)
@@ -188,6 +165,7 @@ class PotholePipeline:
             )
 
     def update_log(self, track_id, area) -> None:
+        """Track logunu günceller. Eğer track_id yoksa yeni bir TrackLog oluşturur, varsa mevcut logu günceller."""
         if track_id not in self.track_log:
             self.track_log[track_id] = TrackLog(
                 first_frame=self.frame_count, last_frame=self.frame_count, max_area=area
@@ -198,26 +176,8 @@ class PotholePipeline:
         log.last_frame = self.frame_count
         log.max_area = max(log.max_area, area)
 
-    def draw_track(self, frame, track_id, box, mask) -> None:
-        x1, y1, x2, y2 = box
-
-        if self.draw_mask and mask is not None and len(mask) > 0:
-            overlay = frame.copy()
-            cv2.fillPoly(overlay, [mask.astype(np.int32)], (0, 200, 0))
-            cv2.addWeighted(overlay, 0.5, frame, 0.5, 0, frame)
-
-        cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
-        cv2.putText(
-            frame,
-            f"ID: {track_id}",
-            (x1, y1 - 10),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.5,
-            (255, 255, 255),
-            1,
-        )
-
     def draw_roi_polygon(self, frame) -> None:
+        """ROI alanını çizer."""
         if not self.draw_roi or self.roi_polygon is None:
             return
 
@@ -230,6 +190,7 @@ class PotholePipeline:
         )
 
     def export_csv(self) -> None:
+        """Track logunu CSV dosyasına yazar."""
         csv_path = self.csv_path
         Path(csv_path).parent.mkdir(parents=True, exist_ok=True)
 
@@ -251,29 +212,14 @@ class PotholePipeline:
         logger.info("Toplam %s cukur -> %s", len(self.track_log), csv_path)
 
     def cleanup(self) -> None:
+        """Video kaynaklarını serbest bırakır."""
         if self.cap is not None:
             self.cap.release()
         if self.out is not None:
             self.out.release()
 
-    def process_frame(self) -> bool:
-        success, frame = self.cap.read()
-        if not success:
-            return False
-        self.frame_count += 1
-        results = self.track_objects(frame)
-        detections = self.parse_results(results)
-        self.update_tracks(detections)
-        self.process_tracks(frame, detections)
-        self.draw_roi_polygon(frame)
-        self.update_fps()
-        self.draw_fps(frame)
-
-        if self.out is not None:
-            self.out.write(frame)
-        return True
-    
     def update_fps(self) -> None:
+        """FPS değerini günceller."""
         now = time.perf_counter()
 
         if self.prev_frame_time is not None:
@@ -284,6 +230,7 @@ class PotholePipeline:
         self.prev_frame_time = now
     
     def draw_fps(self, frame) -> None:
+        """FPS değerini ekrana çizer."""
         cv2.putText(
             frame,
             f"FPS: {self.current_fps:.1f}",
@@ -294,14 +241,52 @@ class PotholePipeline:
             2,
         )
 
- 
+    def process_frame(self) -> bool:
+        """Frame'i işler, takip ve çizim işlemlerini gerçekleştirir. Eğer video bitti ise False döndürür."""
+        success, frame = self.cap.read()
+        if not success:
+            return False
+        self.frame_count += 1
+        detections = self.tracking_backend.track(frame)
+        self.update_tracks(detections)
+        self.process_tracks(frame, detections)
+        self.draw_roi_polygon(frame)
+        self.update_fps()
+        self.draw_fps(frame)
 
-    def run(self):
-        self.load_model()
+        if self.out is not None:
+            self.out.write(frame)
+        return True
+
+    def run(self) -> PipelineMetrics:
         self.initialize_video()
+        start_time = time.perf_counter()
+
         try:
             while self.process_frame():
                 pass
         finally:
+            elapsed = time.perf_counter() - start_time
+            average_fps = (
+                self.frame_count / elapsed
+                if elapsed > 0
+                else 0.0
+            )
+            metrics = PipelineMetrics(
+                frame_count=self.frame_count,
+                elapsed_seconds=elapsed,
+                average_fps=average_fps,
+                track_count=len(self.track_log),
+            )
+
             self.cleanup()
             self.export_csv()
+
+            logger.info(
+                "Performans: %s frame | %.2f saniye | %.2f ortalama FPS",
+                metrics.frame_count,
+                metrics.elapsed_seconds,
+                metrics.average_fps,
+            )
+
+        return metrics

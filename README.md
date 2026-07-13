@@ -21,7 +21,7 @@ Girdi videosu, model yolu ve tüm eşikler `config/config.yaml` içinde. ByteTra
 ## Çıktılar
 
 - `output/videos/output.mp4` — maske + kutu + ID çizilmiş video
-- `output/videos/output.csv` — çukur başına ilk/son kare ve maksimum piksel alanı
+- `output/csv/output.csv` — çukur başına ilk/son kare ve maksimum piksel alanı
 
 ## Dosya yapısı
 
