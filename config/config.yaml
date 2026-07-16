@@ -16,6 +16,7 @@ tracking:
   imgsz: 640
   n_confirm: 3
   m_persist: 5
+  device: 0
 
 smoothing:
   type: none

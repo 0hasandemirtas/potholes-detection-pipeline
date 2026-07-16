@@ -1,18 +1,35 @@
+import argparse
+import logging
+from pathlib import Path
+
+from src.benchmark import append_benchmark_result
 from src.config import Config
-from src.pipeline import PotholePipeline
 from src.factories import (
     create_box_smoother,
     create_tracking_backend,
 )
-from src.benchmark import append_benchmark_result
-import logging
-from pathlib import Path
+from src.pipeline import PotholePipeline
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Pothole detection and tracking pipeline",
+    )
+    parser.add_argument(
+        "--config",
+        type=str,
+        default="config/config.yaml",
+        help="YAML configuration file path",
+    )
+    return parser.parse_args(argv)
 
 
-def main() -> None:
+def main(
+        argv:list[str] | None = None
+) -> int:
 
+    args = parse_args(argv)
     logger = logging.getLogger(__name__)
-    cfg = Config.from_yaml("config/config.yaml")
+    cfg = Config.from_yaml(args.config)
 
     Path(cfg.output.log).parent.mkdir(parents=True, exist_ok=True)
 
@@ -58,10 +75,15 @@ def main() -> None:
         )
     except FileNotFoundError as exc:
         logger.error("Dosya Hatasi: %s", exc)
+        return 1
     except RuntimeError as exc:
         logger.error("Calisma Hatasi: %s", exc)
+        return 1
     except Exception:
         logger.exception("Beklenmeyen Hata olustu")
+        return 1
+
+    return 0
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

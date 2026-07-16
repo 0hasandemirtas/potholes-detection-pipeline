@@ -14,6 +14,7 @@ from src.factories import (
 )
 from src.smoothing import EmaBoxSmoother
 
+
 def test_factory_creates_ema_smoother():
     config = SmoothingConfig(
         type="ema",
@@ -24,6 +25,7 @@ def test_factory_creates_ema_smoother():
 
     assert isinstance(smoother, EmaBoxSmoother)
     assert smoother.alpha == 0.7
+
 
 def test_factory_rejects_unknown_smoother_type():
     config = SmoothingConfig(
@@ -37,13 +39,12 @@ def test_factory_rejects_unknown_smoother_type():
     ):
         create_box_smoother(config)
 
+
 def test_factory_creates_ultralytics_tracking_backend(
     monkeypatch,
 ):
     fake_backend = object()
-    backend_constructor = Mock(
-        return_value=fake_backend
-    )
+    backend_constructor = Mock(return_value=fake_backend)
 
     monkeypatch.setattr(
         factories_module,
@@ -51,9 +52,7 @@ def test_factory_creates_ultralytics_tracking_backend(
         backend_constructor,
     )
 
-    model_config = ModelConfig(
-        path="models/test.pt"
-    )
+    model_config = ModelConfig(path="models/test.pt")
     tracking_config = TrackingConfig(
         backend="ultralytics",
         tracker="bytetrack.yaml",
@@ -61,6 +60,7 @@ def test_factory_creates_ultralytics_tracking_backend(
         imgsz=640,
         n_confirm=3,
         m_persist=5,
+        device="cpu"
     )
 
     result = create_tracking_backend(
@@ -75,4 +75,5 @@ def test_factory_creates_ultralytics_tracking_backend(
         conf=0.25,
         imgsz=640,
         tracker="bytetrack.yaml",
+        device="cpu"
     )
