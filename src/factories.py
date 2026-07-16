@@ -10,6 +10,7 @@ from src.protocols import (
 from src.smoothing import EmaBoxSmoother, NoOpBoxSmoother
 from src.tracking_backends import UltralyticsTrackingBackend
 
+
 def create_box_smoother(config: SmoothingConfig) -> BoxSmootherProtocol:
     if config.type == "ema":
         return EmaBoxSmoother(alpha=config.alpha)
@@ -17,6 +18,7 @@ def create_box_smoother(config: SmoothingConfig) -> BoxSmootherProtocol:
         return NoOpBoxSmoother()
     else:
         raise ValueError(f"Geçersiz smoothing türü: {config.type}")
+
 
 def create_tracking_backend(
     model_config: ModelConfig,
@@ -28,9 +30,7 @@ def create_tracking_backend(
             conf=tracking_config.conf,
             imgsz=tracking_config.imgsz,
             tracker=tracking_config.tracker,
+            device=tracking_config.device,
         )
 
-    raise ValueError(
-        f"Geçersiz tracking backend: "
-        f"{tracking_config.backend}"
-    )
+    raise ValueError(f"Geçersiz tracking backend: {tracking_config.backend}")
