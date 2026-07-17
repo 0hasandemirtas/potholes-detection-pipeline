@@ -28,8 +28,10 @@ class EmaBoxSmoother:
         """Verilen track_id için kaydedilen kutuyu siler."""
         self.prev_box.pop(track_id, None)
 
+
 class NoOpBoxSmoother:
     """Kutuları değiştirmeden döndüren smoothing stratejisi."""
+
     def __init__(self) -> None:
         self.prev_box = {}
 

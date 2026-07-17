@@ -26,7 +26,9 @@ class TrackState:
                 removed_ids.append(track_id)
         for track_id in seen_ids:
             if track_id not in self.tracks:
-                self.tracks[track_id] = Track(seen_count=1, confirmed=self.n_confirm <= 1)
+                self.tracks[track_id] = Track(
+                    seen_count=1, confirmed=self.n_confirm <= 1
+                )
         return removed_ids
 
     def is_visible(self, track_id) -> bool:
