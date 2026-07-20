@@ -25,6 +25,7 @@ def _make_tracking_config(**overrides):
         ("imgsz", 0),
         ("n_confirm", 0),
         ("m_persist", -1),
+        ("confirmed_window", 2),
     ],
 )
 

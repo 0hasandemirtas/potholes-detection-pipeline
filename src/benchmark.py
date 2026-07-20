@@ -32,10 +32,7 @@ def append_benchmark_result(
         exist_ok=True,
     )
 
-    write_header = (
-        not benchmark_path.exists()
-        or benchmark_path.stat().st_size == 0
-    )
+    write_header = not benchmark_path.exists() or benchmark_path.stat().st_size == 0
 
     with open(benchmark_path, "a", newline="") as file:
         writer = csv.DictWriter(
@@ -48,9 +45,7 @@ def append_benchmark_result(
 
         writer.writerow(
             {
-                "timestamp": datetime.now()
-                .astimezone()
-                .isoformat(timespec="seconds"),
+                "timestamp": datetime.now().astimezone().isoformat(timespec="seconds"),
                 "backend": config.tracking.backend,
                 "tracker": config.tracking.tracker,
                 "smoothing": config.smoothing.type,

@@ -46,6 +46,7 @@ class PotholePipeline:
         self.m_persist = cfg.tracking.m_persist
         self.draw_mask = cfg.visualization.draw_mask
         self.draw_roi = cfg.visualization.draw_roi
+        self.max_stale_frames = cfg.visualization.max_stale_frames
 
         self.prev_frame_time = None
         self.current_fps = 0.0
@@ -63,6 +64,7 @@ class PotholePipeline:
         self.state = TrackState(
             n_confirm=self.n_confirm,
             m_persist=self.m_persist,
+            confirmed_window=cfg.tracking.confirmed_window,
         )
 
         self.track_log: dict[int, TrackLog] = {}
@@ -104,6 +106,10 @@ class PotholePipeline:
 
         for track_id in list(self.state.tracks.keys()):
             if not self.state.is_visible(track_id):
+                continue
+
+            track = self.state.tracks[track_id]
+            if (track.missed_count > 0 and track.missed_count > self.max_stale_frames):
                 continue
 
             drawable = self.handle_track(track_id, detections)

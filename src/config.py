@@ -29,6 +29,7 @@ class TrackingConfig:
     imgsz: int
     n_confirm: int
     m_persist: int
+    confirmed_window: int = 5
     device: str | int | None = None
 
     def __post_init__(self) ->None:
@@ -48,6 +49,10 @@ class TrackingConfig:
             raise ValueError(
                 "tracking.m_persist negatif olamaz"
             )
+        if self.confirmed_window < self.n_confirm:
+            raise ValueError(
+                "tracking.confirmed_window, n_confirm değerinden küçük olamaz"
+        )
 
 
 
@@ -55,6 +60,13 @@ class TrackingConfig:
 class VisualizationConfig:
     draw_mask: bool
     draw_roi: bool = False
+    max_stale_frames: int = 1
+
+    def __post_init__(self) -> None:
+        if self.max_stale_frames < 0:
+            raise ValueError(
+                "visualization.max_stale_frames negatif olamaz"
+            )
 
 
 @dataclass
@@ -62,6 +74,8 @@ class OutputConfig:
     csv: str
     log: str | None = None
     benchmark_csv: str | None = None
+    auto_name: bool = False
+    root_dir: str = "output"
 
 
 @dataclass
