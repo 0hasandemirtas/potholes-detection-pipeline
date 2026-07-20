@@ -1,5 +1,5 @@
 model:
-  path: models/best.pt
+  path: models/best_updated_aug.pt
 
 video:
   input: input/klip2_4.40-5.00_slow0.8x.mp4
@@ -11,11 +11,12 @@ video:
 #cok_kotu.mp4
 tracking:
   backend: ultralytics
-  tracker: bytetrack.yaml
-  conf: 0.15
-  imgsz: 640
+  tracker: botsort.yaml
+  conf: 0.1
+  imgsz: 960
   n_confirm: 3
-  m_persist: 5
+  m_persist: 1
+  confirmed_window: 5
   device: 0
 
 smoothing:
@@ -26,14 +27,17 @@ output:
   csv: output/csv/output_bytetrack_no_smoothing.csv
   log: output/logs/pipeline_bytetrack_no_smoothing.log
   benchmark_csv: output/benchmarks/results.csv
+  auto_name: true
+  root_dir: output
 
 roi:
   points:
-    - [0.38, 0.55]
-    - [0.62, 0.55]
+    - [0.46, 0.50]
+    - [0.54, 0.50]
     - [1.00, 0.85]
     - [0.00, 0.85]
 
 visualization:
-  draw_mask: true
+  draw_mask: false
   draw_roi: true
+  max_stale_frames: 1

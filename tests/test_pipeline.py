@@ -53,10 +53,12 @@ def test_roi_outside_detections_do_not_contribute_to_confirmation():
         tracking=SimpleNamespace(
             n_confirm=3,
             m_persist=5,
+            confirmed_window=5,
         ),
         visualization=SimpleNamespace(
             draw_mask=False,
             draw_roi=False,
+            max_stale_frames=1,
         ),
         roi=SimpleNamespace(points=[]),
     )
@@ -118,10 +120,12 @@ def _make_roi_pipeline(*, n_confirm, detections):
         tracking=SimpleNamespace(
             n_confirm=n_confirm,
             m_persist=5,
+            confirmed_window=5,
         ),
         visualization=SimpleNamespace(
             draw_mask=False,
             draw_roi=False,
+            max_stale_frames=1,
         ),
         roi=SimpleNamespace(points=[]),
     )

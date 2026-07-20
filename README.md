@@ -132,7 +132,21 @@ video.output: output/videos/output.mp4
 output.csv: output/csv/output.csv
 output.log: output/logs/pipeline.log
 output.benchmark_csv: output/benchmarks/results.csv
+output.auto_name: true
+output.root_dir: output
 ```
+
+`output.auto_name: true` olduğunda video, CSV ve log dosya adları çalışma
+başında otomatik değiştirilir. Üç çıktı da tarih-saat, girdi videosu, tracker
+ve smoothing bilgisinden üretilen aynı deney kimliğini kullanır:
+
+```text
+output/videos/20260720_143522_123_video_bytetrack_none.mp4
+output/csv/20260720_143522_123_video_bytetrack_none.csv
+output/logs/20260720_143522_123_video_bytetrack_none.log
+```
+
+Manuel dosya yollarını kullanmak için `output.auto_name: false` yapılabilir.
 
 ### CSV şeması
 

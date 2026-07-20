@@ -1,6 +1,7 @@
 __pycache__/
 *.pyc
 .venv/
+.venv-old/
 .pytest_cache/
 .ruff_cache/
 .vscode/

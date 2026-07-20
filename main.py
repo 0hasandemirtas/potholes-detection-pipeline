@@ -9,6 +9,7 @@ from src.factories import (
     create_tracking_backend,
 )
 from src.pipeline import PotholePipeline
+from src.output_paths import configure_output_paths
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -30,6 +31,7 @@ def main(
     args = parse_args(argv)
     logger = logging.getLogger(__name__)
     cfg = Config.from_yaml(args.config)
+    run_id = configure_output_paths(cfg)
 
     Path(cfg.output.log).parent.mkdir(parents=True, exist_ok=True)
 
@@ -43,6 +45,11 @@ def main(
     )
 
     try:
+        if run_id is not None:
+            logger.info("Deney kimligi: %s", run_id)
+            logger.info("Video ciktisi: %s", cfg.video.output)
+            logger.info("CSV ciktisi: %s", cfg.output.csv)
+
         smoother = create_box_smoother(cfg.smoothing)
         tracking_backend = create_tracking_backend(
             model_config=cfg.model,

@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import numpy as np
 
 
@@ -7,6 +7,7 @@ class Track:
     seen_count: int = 0
     missed_count: int = 0
     confirmed: bool = False
+    recent_hits: list[bool] = field(default_factory=list)
 
 
 @dataclass
